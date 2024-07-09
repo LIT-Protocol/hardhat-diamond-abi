@@ -1,3 +1,9 @@
+# Lit fork
+
+This fork was created to deal with the problem introduced by upgrading to solidity 0.8.20+. The related issue is here: https://github.com/ethereum/solidity/issues/9765#issuecomment-689396725
+
+The problem is that now, the Diamond ABI includes the functions and events that it uses, even if they're not part of the base contract, which are also included in the facet ABIs. This causes duplicate function selectors, which causes problems. But the function selectors aren't actually duplicate! They're just duplicated in the ABI, because the diamond contract will ineviteably call things like `facetAddress(bytes4)` and `facetAddresses()` and `facetFunctionSelectors(address)`, which are all included in the DiamondCut facet ABI.
+
 # hardhat-diamond-abi
 
 Hardhat plugin to combine multiple ABIs into a Diamond ABI artifact

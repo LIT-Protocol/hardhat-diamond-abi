@@ -243,6 +243,7 @@ export async function generateDiamondAbi(
       );
     }
 
+    let artifact;
     if (config.strict) {
       // the diamond contract will call the Diamond facet functions
       // so, in solidity 0.8.20+ those functions are included in the
@@ -261,6 +262,7 @@ export async function generateDiamondAbi(
       // this before a deployment, but `diamondCut` will fail if you try to cut
       // multiple functions (thus failing a deploy).
       const diamondAbiSet = new Set();
+      const uniqueMergedAbis = new Set();
 
       mergedAbis.forEach((abi) => {
         const sighash = Fragment.fromObject(abi).format(FormatTypes.sighash);
@@ -276,11 +278,14 @@ export async function generateDiamondAbi(
           );
         } else {
           diamondAbiSet.add(sighash);
+          uniqueMergedAbis.add(abi);
         }
       });
-    }
 
-    const artifact = createArtifact(config.name, mergedAbis);
+      artifact = createArtifact(config.name, Array.from(uniqueMergedAbis));
+    } else {
+      artifact = createArtifact(config.name, mergedAbis);
+    }
 
     // Save into the Hardhat cache so artifact utilities can load it
     await hre.artifacts.saveArtifactAndDebugFile(artifact);
