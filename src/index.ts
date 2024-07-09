@@ -244,6 +244,17 @@ export async function generateDiamondAbi(
     }
 
     if (config.strict) {
+      // the diamond contract will call the Diamond facet functions
+      // so, in solidity 0.8.20+ those functions are included in the
+      // Diamond ABI.  but they're also in the facet ABI.  Which is why
+      // we need to skip duplicate checks for them.
+      const functionsToSkipDuplicateCheck = [
+        "facetAddress(bytes4)",
+        "facetAddresses()",
+        "facetFunctionSelectors(address)",
+        "facets()",
+      ];
+
       // Validate the ABI if `strict` option is `true`
       // Consumers may opt to validate their Diamond doesn't contain duplicate
       // functions before a deployment. There isn't a great way to determine
@@ -254,12 +265,18 @@ export async function generateDiamondAbi(
       mergedAbis.forEach((abi) => {
         const sighash = Fragment.fromObject(abi).format(FormatTypes.sighash);
         if (diamondAbiSet.has(sighash)) {
+          // skip duplicate check for events and errors
+          // diamond contracts work fine with duplicate events and errors
+          if (abi.type === "event" || abi.type === "error" || functionsToSkipDuplicateCheck.includes(sighash)) {
+            return;
+          }
           throw new HardhatPluginError(
             PLUGIN_NAME,
             `Failed to create ${config.name} ABI - \`${sighash}\` appears twice.`
           );
+        } else {
+          diamondAbiSet.add(sighash);
         }
-        diamondAbiSet.add(sighash);
       });
     }
 
